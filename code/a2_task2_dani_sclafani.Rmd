@@ -83,7 +83,8 @@ summary(palm_blr)
 
 ```
 
-```{r}
+Table 1.0: Results of the Binary Logistics Regression model. The estimate column contains the coefficient for each variable, which states as each variable increases by one unit, the probability of the tree being _S. repens_ increases or decreases by the amount of the coefficient. 
+```{r, warning = FALSE}
 # making a table of blr results
 
 tidy_palm_blr <- broom::tidy(palm_blr)
@@ -109,34 +110,35 @@ palm_prob <- blr_fitted %>%
     .fitted < 0.5 ~ "Sabal etonia"
   ))
 
-#using case when?
+#using case when
 palm_accurate <- palm_prob %>% 
   mutate(accurate = case_when(
     species_name == predicted_species ~ "Accurate",
-    species_name != predicted_species ~ "Inaccurate"))
+    species_name != predicted_species ~ "Inaccurate")) 
 
-#uniting the two columns
-unite_palm <- palm_prob %>% 
-  select(species_name, predicted_species) %>% 
-  unite(accurate, species_name : predicted_species, sep = ",", remove = FALSE)
-
-#counting the amount that are accurate and false
-count_attempt <- unite_palm %>% 
-  group_by(accurate) %>% 
+#palm_accurate table
+palm_table <- palm_accurate %>% 
+  group_by(species_name, accurate) %>% 
   count()
 
-#renaming for the table
-table <- count_attempt %>% 
-  mutate(Results = case_when(
-    accurate == "Sabal etonia,Sabal etonia" ~ "Correctly identified as Sabal etonia",
-    accurate == "Sabal etonia,Serenoa repens" ~ "Incorrectly identified as Serenoa repens",
-    accurate == "Serenoa repens,Serenoa repens" ~ "Correctly identified as Serenoa repens",
-    accurate == "Serenoa repens,Sabal etonia" ~ "Incorrectly identified as Sabal etonia"
-  ))
 
-#renaming table
-table_2 <- table %>% 
-  select(Results, n)
+```
+
+Table 2.0 Displays the accuracy of the Binary Logistic Model. The percent of each species accurately and inaccurately predicted by the model are provided. The counts of accurate and inaccurate predictions are also included in parantheses. 
+```{r, warning = FALSE}
+#percent attempt
+percent_attempt <- palm_table %>%
+  pivot_wider(species_name, names_from = "accurate",
+              values_from = "n") %>% 
+  adorn_percentages() %>% 
+  adorn_pct_formatting(digits = 2) %>% 
+  adorn_ns() %>% 
+  rename(Species = species_name)
+
+percent_attempt %>% 
+  kbl(caption = "Percentage and Occurence of Binary Logistic Model predicting the species Accurately and Inaccurately") %>% 
+  kable_classic_2(full_width = F, html_font = "Cambria")
+
 ```
 
 
