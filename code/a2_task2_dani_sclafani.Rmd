@@ -12,6 +12,9 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(here)
 library(janitor)
+library(broom)
+library(kableExtra)
+
 ```
 
 
@@ -25,7 +28,116 @@ palmetto <- read_csv(here("data", "palmetto.csv")) %>%
   ))
 ```
 
+## Data Visualizations
 
+```{r, warning = FALSE, fig.cap= "Figure 1.0: Distribution of _S. etonia_ and _S. repens_ canopy heights (cm)"}
+# data visualization of height comparison
+
+ggplot(data = palmetto, aes(x = height, y = width)) + geom_point(aes(color = species_name), alpha = 0.7) +
+                                                          scale_color_manual(values = c("cyan4", "blue"))  +
+  theme_minimal()+
+  labs(x = "Height (cm)", y ="Width (cm)", color = "Species")
+```
+The two species of trees, _S. etonia_ and _S. repens_ have very similar distributions of height (cm) and width (cm), however, there seems to be more _S. repens_ trending towards a smaller width and _S. etonia_ having a larger width.
+
+```{r, warning = FALSE, fig.cap= "Figure 2.0: Comparison of canopy Length (cm) of _S. etonia_ and _S. repens_"}
+ggplot(data = palmetto, aes(x = length)) + geom_boxplot(aes(fill = species_name), alpha = 0.7) +
+                                                          scale_fill_manual(values = c("pink", "orange")) +
+  theme_minimal() +
+  labs(x = "Canopy Length (cm)", fill = "Species")
+```
+
+The overall distribution of _S. entonia_ and _S. repens_ overlap pretty significantly however, the mean canopy length (cm) of _S. entonia_ is slightly larger than _S. repens_. 
+
+
+```{r, warning = FALSE, fig.cap="Figure 3: Comparison of the number of green leaves present on _S. etonia_ and _S. repens_ trees."}
+
+# data visualization exploring number of green leaves on each species
+
+ggplot(data = palmetto, aes(x = green_lvs)) + geom_histogram(aes(fill = species_name), alpha = 0.7) + 
+  scale_fill_manual(values = c("green", "darkgreen")) +
+  theme_minimal()+
+  labs(x = "Number of Green Leaves", fill = "Species", y = " ")
+```
+
+The distribution of the number of green leaves on each tree species appears to provide some insight into how the trees may be identified. _S. etonia_ appears to have a lower mean number of leaves than _S. repens_. The distribution of the number of leaves for _S. repens_ is larger than that of _S. etonia_. 
+
+
+## Binary Logistic Regression
+
+
+```{r, warning = FALSE}
+#made the species into factors, Sabal etonia = 0, Serenoa repens = 1, because Serenoa repens is the 1 factor, the regression model will show us the probability that it is Serenoa repens
+
+palm_fact <- palmetto %>% 
+  mutate(species_name = fct_drop(species_name))
+
+#making the binary logistic regression
+palm_blr <- glm(species_name ~ height + length + green_lvs + width,
+                data = palm_fact,
+                family = "binomial")
+
+# looking at the outcomes
+
+summary(palm_blr)
+
+```
+
+```{r}
+# making a table of blr results
+
+tidy_palm_blr <- broom::tidy(palm_blr)
+tidy_palm_blr
+
+kable(tidy_palm_blr, caption = "Palmetto Binary Logistic Regression Results") %>% 
+  kable_classic_2(full_width = F) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+```{r}
+# getting the probabilities, probability that something is a S. repens is in the .fitted column
+blr_fitted <- palm_blr %>% 
+  broom::augment(type.predict = "response")
+```
+
+```{r}
+# adding a column that says the species the observation should be based on the model
+palm_prob <- blr_fitted %>% 
+  mutate(predicted_species = case_when(
+    .fitted >= 0.5 ~ "Serenoa repens",
+    .fitted < 0.5 ~ "Sabal etonia"
+  ))
+
+#using case when?
+palm_accurate <- palm_prob %>% 
+  mutate(accurate = case_when(
+    species_name == predicted_species ~ "Accurate",
+    species_name != predicted_species ~ "Inaccurate"))
+
+#uniting the two columns
+unite_palm <- palm_prob %>% 
+  select(species_name, predicted_species) %>% 
+  unite(accurate, species_name : predicted_species, sep = ",", remove = FALSE)
+
+#counting the amount that are accurate and false
+count_attempt <- unite_palm %>% 
+  group_by(accurate) %>% 
+  count()
+
+#renaming for the table
+table <- count_attempt %>% 
+  mutate(Results = case_when(
+    accurate == "Sabal etonia,Sabal etonia" ~ "Correctly identified as Sabal etonia",
+    accurate == "Sabal etonia,Serenoa repens" ~ "Incorrectly identified as Serenoa repens",
+    accurate == "Serenoa repens,Serenoa repens" ~ "Correctly identified as Serenoa repens",
+    accurate == "Serenoa repens,Sabal etonia" ~ "Incorrectly identified as Sabal etonia"
+  ))
+
+#renaming table
+table_2 <- table %>% 
+  select(Results, n)
+```
 
 
 Data Citation: Abrahamson, W.G. 2019. Survival, growth and biomass estimates of two dominant palmetto species of south-central Florida from 1981 - 2017, ongoing at 5-year intervals ver 1. Environmental Data Initiative. https://doi.org/10.6073/pasta/f2f96ec76fbbd4b9db431c79a770c4d5
