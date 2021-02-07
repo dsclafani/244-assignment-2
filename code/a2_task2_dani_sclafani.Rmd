@@ -1,0 +1,31 @@
+---
+title: "a2_task2_dani_sclafani"
+author: "Danielle Sclafani"
+date: "2/6/2021"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE, warnings = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(janitor)
+```
+
+
+```{r, warning=FALSE}
+palmetto <- read_csv(here("data", "palmetto.csv")) %>% 
+  clean_names() %>% 
+  select(height, length, width, green_lvs, species) %>% 
+  mutate(species_name = case_when(
+    species == 1 ~ "Serenoa repens",
+    species == 2 ~ "Sabal etonia"
+  ))
+```
+
+
+
+
+Data Citation: Abrahamson, W.G. 2019. Survival, growth and biomass estimates of two dominant palmetto species of south-central Florida from 1981 - 2017, ongoing at 5-year intervals ver 1. Environmental Data Initiative. https://doi.org/10.6073/pasta/f2f96ec76fbbd4b9db431c79a770c4d5
