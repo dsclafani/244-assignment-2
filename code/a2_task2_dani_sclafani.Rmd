@@ -30,7 +30,7 @@ palmetto <- read_csv(here("data", "palmetto.csv")) %>%
 
 ## Data Visualizations
 
-```{r, warning = FALSE, fig.cap= "Figure 1.0: Distribution of _S. etonia_ and _S. repens_ canopy heights (cm)"}
+```{r, warning = FALSE, fig.cap= "Figure 1.0: Distribution of _S. etonia_ and _S. repens_ canopy heights (cm) versus canopy width (cm)"}
 # data visualization of height comparison
 
 ggplot(data = palmetto, aes(x = height, y = width)) + geom_point(aes(color = species_name), alpha = 0.7) +
@@ -38,24 +38,25 @@ ggplot(data = palmetto, aes(x = height, y = width)) + geom_point(aes(color = spe
   theme_minimal()+
   labs(x = "Height (cm)", y ="Width (cm)", color = "Species")
 ```
-The two species of trees, _S. etonia_ and _S. repens_ have very similar distributions of height (cm) and width (cm), however, there seems to be more _S. repens_ trending towards a smaller width and _S. etonia_ having a larger width.
+The two species of trees, _S. etonia_ and _S. repens_ have very similar distributions of height (cm) and width (cm), however, there seems to be more _S. repens_ trending towards a smaller canopy width and _S. etonia_ having a larger canopy width.
+
 
 ```{r, warning = FALSE, fig.cap= "Figure 2.0: Comparison of canopy Length (cm) of _S. etonia_ and _S. repens_"}
 ggplot(data = palmetto, aes(x = length)) + geom_boxplot(aes(fill = species_name), alpha = 0.7) +
-                                                          scale_fill_manual(values = c("pink", "orange")) +
+                                                          scale_fill_manual(values = c("cyan4", "blue")) +
   theme_minimal() +
   labs(x = "Canopy Length (cm)", fill = "Species")
 ```
 
-The overall distribution of _S. entonia_ and _S. repens_ overlap pretty significantly however, the mean canopy length (cm) of _S. entonia_ is slightly larger than _S. repens_. 
+The overall distribution of _S. entonia_ and _S. repens_ overlap pretty significantly however, the mean canopy length (cm) of _S. entonia_ is slightly larger than the mean canopy length (cm) of _S. repens_. 
 
 
-```{r, warning = FALSE, fig.cap="Figure 3: Comparison of the number of green leaves present on _S. etonia_ and _S. repens_ trees."}
+```{r, fig.cap="Figure 3: Comparison of the number of green leaves present on _S. etonia_ and _S. repens_ trees.", warning=FALSE, message=FALSE}
 
 # data visualization exploring number of green leaves on each species
 
 ggplot(data = palmetto, aes(x = green_lvs)) + geom_histogram(aes(fill = species_name), alpha = 0.7) + 
-  scale_fill_manual(values = c("green", "darkgreen")) +
+  scale_fill_manual(values = c("cyan4", "blue")) +
   theme_minimal()+
   labs(x = "Number of Green Leaves", fill = "Species", y = " ")
 ```
@@ -65,7 +66,7 @@ The distribution of the number of green leaves on each tree species appears to p
 
 ## Binary Logistic Regression
 
-
+##### Results of Binary Logistic Regression
 ```{r, warning = FALSE}
 #made the species into factors, Sabal etonia = 0, Serenoa repens = 1, because Serenoa repens is the 1 factor, the regression model will show us the probability that it is Serenoa repens
 
@@ -83,12 +84,17 @@ summary(palm_blr)
 
 ```
 
+```{r, warning = FALSE}
+#table prep
+tidy_palm_blr <- broom::tidy(palm_blr)
+
+
+```
+
+
 Table 1.0: Results of the Binary Logistics Regression model. The estimate column contains the coefficient for each variable, which states as each variable increases by one unit, the probability of the tree being _S. repens_ increases or decreases by the amount of the coefficient. 
 ```{r, warning = FALSE}
 # making a table of blr results
-
-tidy_palm_blr <- broom::tidy(palm_blr)
-tidy_palm_blr
 
 kable(tidy_palm_blr, caption = "Palmetto Binary Logistic Regression Results") %>% 
   kable_classic_2(full_width = F) %>% 
@@ -96,13 +102,14 @@ kable(tidy_palm_blr, caption = "Palmetto Binary Logistic Regression Results") %>
 
 ```
 
-```{r}
+```{r, warning = FALSE}
 # getting the probabilities, probability that something is a S. repens is in the .fitted column
 blr_fitted <- palm_blr %>% 
   broom::augment(type.predict = "response")
 ```
 
-```{r}
+
+```{r,warning=FALSE}
 # adding a column that says the species the observation should be based on the model
 palm_prob <- blr_fitted %>% 
   mutate(predicted_species = case_when(
@@ -124,7 +131,7 @@ palm_table <- palm_accurate %>%
 
 ```
 
-Table 2.0 Displays the accuracy of the Binary Logistic Model. The percent of each species accurately and inaccurately predicted by the model are provided. The counts of accurate and inaccurate predictions are also included in parantheses. 
+Table 2.0 Displays the accuracy of the Binary Logistic Model to determine the species of tree based on the four variables canopy height (cm), canopy width (cm), canopy length (cm), and the number of green leaves. The percent of each species accurately and inaccurately predicted by the model are provided. The counts of accurate and inaccurate predictions are also included in parentheses. 
 ```{r, warning = FALSE}
 #percent attempt
 percent_attempt <- palm_table %>%
